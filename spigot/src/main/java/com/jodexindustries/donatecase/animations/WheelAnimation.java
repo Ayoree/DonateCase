@@ -89,7 +89,6 @@ public class WheelAnimation extends JavaAnimation {
         private int ticks;
         private double targetAngle;
         private final double rotationThreshold;
-        private final double offset;
 
         public Task() {
             float pitch = Math.round(getLocation().getPitch() / 90.0f) * 90.0f;
@@ -99,8 +98,7 @@ public class WheelAnimation extends JavaAnimation {
 
             initializeItems();
 
-            rotationThreshold = Math.PI / armorStands.size();
-            offset = 2 * rotationThreshold;
+            rotationThreshold = 2 * Math.PI / armorStands.size();
 
             world = loc.getWorld() != null ? loc.getWorld() : getPlayer().getWorld();
         }
@@ -194,7 +192,7 @@ public class WheelAnimation extends JavaAnimation {
                 Vector rotationAxis = loc.getDirection().crossProduct(new Vector(0, 1, 0)).normalize();
                 Location newLoc = flocation.clone().add(rotationAxis.multiply(x).add(loc.getDirection().multiply(y)));
                 entity.teleport(newLoc);
-                angle += offset;
+                angle += rotationThreshold;
 
                 double currentAngle = angle - baseAngle;
                 if (currentAngle - lastCompletedRotation >= rotationThreshold && needSound) {
