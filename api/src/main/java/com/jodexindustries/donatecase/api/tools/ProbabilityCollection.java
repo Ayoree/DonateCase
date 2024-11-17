@@ -113,10 +113,11 @@ public final class ProbabilityCollection<E> {
             throw new IllegalArgumentException("Cannot add null object");
         }
 
-        if (probability <= 0) probability = 1;
+        if (probability <= 0) probability = 0;
 
         ProbabilitySetElement<E> entry = new ProbabilitySetElement<>(object, probability);
-        entry.setIndex(this.totalProbability + 1);
+
+        entry.setIndex(probability == 0 ? -(collection.headSet(entry).size()) - 1 : this.totalProbability);
 
         this.collection.add(entry);
         this.totalProbability += probability;
@@ -136,27 +137,33 @@ public final class ProbabilityCollection<E> {
         }
 
         Iterator<ProbabilitySetElement<E>> it = this.iterator();
-        boolean removed = false;
 
         // Remove all instances of the object
+        ProbabilitySetElement<E> removedEntry = null;
         while (it.hasNext()) {
             ProbabilitySetElement<E> entry = it.next();
             if (entry.getObject().equals(object)) {
-                this.totalProbability -= entry.getProbability();
+                removedEntry = entry;
+                this.totalProbability -= removedEntry.getProbability();
                 it.remove();
-                removed = true;
             }
         }
 
         // Recalculate remaining elements "block" of space: i.e 1-5, 6-10, 11-14
-        if (removed) {
+        if (removedEntry != null) {
+            double removedIndex = removedEntry.getIndex();
             double previousIndex = 0;
             for (ProbabilitySetElement<E> entry : this.collection) {
-                previousIndex = entry.setIndex(previousIndex + 1) + (entry.getProbability() - 1);
+                if (entry.getProbability() > 0) {
+                    previousIndex = entry.setIndex(previousIndex) + entry.getProbability();
+                }
+                else if (removedIndex < 0 && removedIndex > entry.getIndex()) {
+                    entry.setIndex(entry.getIndex() + 1);
+                }
             }
         }
 
-        return removed;
+        return removedEntry != null;
     }
 
     /**
@@ -180,7 +187,8 @@ public final class ProbabilityCollection<E> {
         }
 
         ProbabilitySetElement<E> toFind = new ProbabilitySetElement<>(null, 0);
-        toFind.setIndex(this.random.nextDouble(1, this.totalProbability + 1));
+        double from = this.totalProbability == 0 ? collection.first().getIndex() : 0;
+        toFind.setIndex(this.random.nextDouble(from, this.totalProbability));
 
         return Objects.requireNonNull(this.collection.floor(toFind)).getObject();
     }
@@ -215,6 +223,7 @@ public final class ProbabilityCollection<E> {
         private ProbabilitySetElement(T object, double probability) {
             this.object = object;
             this.probability = probability;
+            this.index = 0;
         }
 
         /**
@@ -242,5 +251,4 @@ public final class ProbabilityCollection<E> {
             return this.index;
         }
     }
-
 }
